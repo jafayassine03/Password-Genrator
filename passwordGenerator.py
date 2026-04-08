@@ -87,6 +87,17 @@ def check_strength(password):
         return "Strong 💪"
 
 
+def save_passwords(passwords):
+    try:
+        filename = input("Enter filename to save passwords (e.g., passwords.txt): ").strip()
+        with open(filename, "w") as f:
+            for i, (pwd, strength) in enumerate(passwords, start=1):
+                f.write(f"{i}. {pwd}  →  {strength}\n")
+        print(f"✅ Passwords saved successfully to {filename}")
+    except Exception as e:
+        print(f"Error saving passwords: {e}")
+
+
 def main():
     print("=== 🔐 Advanced Secure Password Generator ===")
 
@@ -105,6 +116,7 @@ def main():
 
     print("\nGenerated Password(s):\n")
 
+    generated = []
     for i in range(quantity):
         password = generate_password(
             length,
@@ -115,6 +127,11 @@ def main():
         )
         strength = check_strength(password)
         print(f"{i+1}. {password}  →  {strength}")
+        generated.append((password, strength))
+
+    save_option = input("\nDo you want to save these passwords to a file? (y/n): ").strip().lower()
+    if save_option == "y":
+        save_passwords(generated)
 
 
 if __name__ == "__main__":
