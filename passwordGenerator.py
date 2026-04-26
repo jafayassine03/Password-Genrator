@@ -1,7 +1,7 @@
 import string
 import secrets
 import random
-
+import pyperclip
 
 def get_user_input():
     try:
@@ -31,7 +31,6 @@ def get_user_input():
 
     return length, include_letters, include_numbers, include_symbols, exclude_ambiguous, quantity
 
-
 def build_character_pool(include_letters, include_numbers, include_symbols, exclude_ambiguous):
     characters = ""
     ambiguous = "l1IO0"
@@ -47,7 +46,6 @@ def build_character_pool(include_letters, include_numbers, include_symbols, excl
         characters = ''.join(c for c in characters if c not in ambiguous)
 
     return characters
-
 
 def generate_password(length, characters, include_letters, include_numbers, include_symbols):
     password = []
@@ -65,7 +63,6 @@ def generate_password(length, characters, include_letters, include_numbers, incl
     random.shuffle(password)
 
     return ''.join(password)
-
 
 def check_strength(password):
     score = 0
@@ -86,7 +83,6 @@ def check_strength(password):
     else:
         return "Strong 💪"
 
-
 def save_passwords(passwords):
     try:
         filename = input("Enter filename to save passwords (e.g., passwords.txt): ").strip()
@@ -97,6 +93,16 @@ def save_passwords(passwords):
     except Exception as e:
         print(f"Error saving passwords: {e}")
 
+def copy_to_clipboard(passwords):
+    try:
+        choice = int(input("Enter password number to copy: "))
+        if 1 <= choice <= len(passwords):
+            pyperclip.copy(passwords[choice - 1][0])
+            print("📋 Copied to clipboard")
+        else:
+            print("Invalid choice")
+    except:
+        print("Invalid input")
 
 def main():
     print("=== 🔐 Advanced Secure Password Generator ===")
@@ -129,10 +135,13 @@ def main():
         print(f"{i+1}. {password}  →  {strength}")
         generated.append((password, strength))
 
+    copy_option = input("\nDo you want to copy a password? (y/n): ").strip().lower()
+    if copy_option == "y":
+        copy_to_clipboard(generated)
+
     save_option = input("\nDo you want to save these passwords to a file? (y/n): ").strip().lower()
     if save_option == "y":
         save_passwords(generated)
-
 
 if __name__ == "__main__":
     main()
