@@ -7,6 +7,7 @@ Simple. Practical. Reliable.
 
 🚀 Features
 Generate random passwords directly from the terminal
+Password Entropy Calculator
 
 Choose custom password length
 
