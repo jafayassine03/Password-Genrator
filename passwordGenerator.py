@@ -2,6 +2,7 @@ import string
 import secrets
 import random
 import pyperclip
+import math
 
 def get_user_input():
     try:
@@ -83,12 +84,17 @@ def check_strength(password):
     else:
         return "Strong 💪"
 
+def calculate_entropy(password, pool_size):
+    length = len(password)
+    entropy = length * math.log2(pool_size)
+    return entropy
+
 def save_passwords(passwords):
     try:
         filename = input("Enter filename to save passwords (e.g., passwords.txt): ").strip()
         with open(filename, "w") as f:
-            for i, (pwd, strength) in enumerate(passwords, start=1):
-                f.write(f"{i}. {pwd}  →  {strength}\n")
+            for i, (pwd, strength, entropy) in enumerate(passwords, start=1):
+                f.write(f"{i}. {pwd}  →  {strength} | Entropy: {entropy:.2f} bits\n")
         print(f"✅ Passwords saved successfully to {filename}")
     except Exception as e:
         print(f"Error saving passwords: {e}")
@@ -120,6 +126,8 @@ def main():
         exclude_ambiguous
     )
 
+    pool_size = len(characters)
+
     print("\nGenerated Password(s):\n")
 
     generated = []
@@ -132,8 +140,9 @@ def main():
             include_symbols
         )
         strength = check_strength(password)
-        print(f"{i+1}. {password}  →  {strength}")
-        generated.append((password, strength))
+        entropy = calculate_entropy(password, pool_size)
+        print(f"{i+1}. {password}  →  {strength} | Entropy: {entropy:.2f} bits")
+        generated.append((password, strength, entropy))
 
     copy_option = input("\nDo you want to copy a password? (y/n): ").strip().lower()
     if copy_option == "y":
