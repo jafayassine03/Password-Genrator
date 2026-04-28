@@ -8,9 +8,9 @@ def get_user_input():
     try:
         length = int(input("Enter password length (minimum 4): "))
         if length < 4:
-            raise ValueError("Password length must be at least 4.")
-    except ValueError as e:
-        print(f"Invalid input: {e}")
+            raise ValueError
+    except:
+        print("Invalid length")
         return None
 
     include_letters = input("Include letters? (y/n): ").strip().lower() == "y"
@@ -22,12 +22,12 @@ def get_user_input():
         quantity = int(input("How many passwords to generate?: "))
         if quantity < 1:
             raise ValueError
-    except ValueError:
-        print("Invalid quantity.")
+    except:
+        print("Invalid quantity")
         return None
 
     if not any([include_letters, include_numbers, include_symbols]):
-        print("You must select at least one character type.")
+        print("Select at least one character type")
         return None
 
     return length, include_letters, include_numbers, include_symbols, exclude_ambiguous, quantity
@@ -62,7 +62,6 @@ def generate_password(length, characters, include_letters, include_numbers, incl
         password.append(secrets.choice(characters))
 
     random.shuffle(password)
-
     return ''.join(password)
 
 def check_strength(password):
@@ -79,39 +78,68 @@ def check_strength(password):
 
     if score <= 1:
         return "Weak ❌"
-    elif score == 2 or score == 3:
+    elif score <= 3:
         return "Medium ⚠️"
     else:
         return "Strong 💪"
 
 def calculate_entropy(password, pool_size):
-    length = len(password)
-    entropy = length * math.log2(pool_size)
-    return entropy
+    return len(password) * math.log2(pool_size)
+
+def estimate_crack_time(entropy):
+    guesses_per_second = 1e10
+    seconds = (2 ** entropy) / guesses_per_second
+    if seconds < 60:
+        return f"{seconds:.2f} seconds"
+    elif seconds < 3600:
+        return f"{seconds/60:.2f} minutes"
+    elif seconds < 86400:
+        return f"{seconds/3600:.2f} hours"
+    elif seconds < 31536000:
+        return f"{seconds/86400:.2f} days"
+    else:
+        return f"{seconds/31536000:.2f} years"
 
 def save_passwords(passwords):
     try:
-        filename = input("Enter filename to save passwords (e.g., passwords.txt): ").strip()
+        filename = input("Enter filename: ").strip()
         with open(filename, "w") as f:
-            for i, (pwd, strength, entropy) in enumerate(passwords, start=1):
-                f.write(f"{i}. {pwd}  →  {strength} | Entropy: {entropy:.2f} bits\n")
-        print(f"✅ Passwords saved successfully to {filename}")
-    except Exception as e:
-        print(f"Error saving passwords: {e}")
+            for i, (pwd, strength, entropy, crack) in enumerate(passwords, start=1):
+                f.write(f"{i}. {pwd} → {strength} | Entropy: {entropy:.2f} bits | Crack Time: {crack}\n")
+        print("Saved successfully")
+    except:
+        print("Error saving file")
 
 def copy_to_clipboard(passwords):
     try:
         choice = int(input("Enter password number to copy: "))
         if 1 <= choice <= len(passwords):
             pyperclip.copy(passwords[choice - 1][0])
-            print("📋 Copied to clipboard")
+            print("Copied")
+        else:
+            print("Invalid choice")
+    except:
+        print("Invalid input")
+
+def regenerate_one(generated, length, characters, include_letters, include_numbers, include_symbols, pool_size):
+    try:
+        choice = int(input("Enter password number to regenerate: "))
+        if 1 <= choice <= len(generated):
+            password = generate_password(length, characters, include_letters, include_numbers, include_symbols)
+            strength = check_strength(password)
+            entropy = calculate_entropy(password, pool_size)
+            crack = estimate_crack_time(entropy)
+
+            generated[choice - 1] = (password, strength, entropy, crack)
+
+            print(f"Updated {choice}: {password} → {strength} | Entropy: {entropy:.2f} bits | Crack Time: {crack}")
         else:
             print("Invalid choice")
     except:
         print("Invalid input")
 
 def main():
-    print("=== 🔐 Advanced Secure Password Generator ===")
+    print("=== Advanced Secure Password Generator ===")
 
     user_input = get_user_input()
     if not user_input:
@@ -119,37 +147,27 @@ def main():
 
     length, include_letters, include_numbers, include_symbols, exclude_ambiguous, quantity = user_input
 
-    characters = build_character_pool(
-        include_letters,
-        include_numbers,
-        include_symbols,
-        exclude_ambiguous
-    )
-
+    characters = build_character_pool(include_letters, include_numbers, include_symbols, exclude_ambiguous)
     pool_size = len(characters)
 
     print("\nGenerated Password(s):\n")
 
     generated = []
     for i in range(quantity):
-        password = generate_password(
-            length,
-            characters,
-            include_letters,
-            include_numbers,
-            include_symbols
-        )
+        password = generate_password(length, characters, include_letters, include_numbers, include_symbols)
         strength = check_strength(password)
         entropy = calculate_entropy(password, pool_size)
-        print(f"{i+1}. {password}  →  {strength} | Entropy: {entropy:.2f} bits")
-        generated.append((password, strength, entropy))
+        crack = estimate_crack_time(entropy)
+        print(f"{i+1}. {password} → {strength} | Entropy: {entropy:.2f} bits | Crack Time: {crack}")
+        generated.append((password, strength, entropy, crack))
 
-    copy_option = input("\nDo you want to copy a password? (y/n): ").strip().lower()
-    if copy_option == "y":
+    if input("\nRegenerate a password? (y/n): ").strip().lower() == "y":
+        regenerate_one(generated, length, characters, include_letters, include_numbers, include_symbols, pool_size)
+
+    if input("\nCopy a password? (y/n): ").strip().lower() == "y":
         copy_to_clipboard(generated)
 
-    save_option = input("\nDo you want to save these passwords to a file? (y/n): ").strip().lower()
-    if save_option == "y":
+    if input("\nSave passwords? (y/n): ").strip().lower() == "y":
         save_passwords(generated)
 
 if __name__ == "__main__":
