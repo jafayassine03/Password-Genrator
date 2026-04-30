@@ -6,29 +6,23 @@ This project was built while practicing Python fundamentals and completing daily
 Simple. Practical. Reliable.
 
 🚀 Features
-Generate random passwords directly from the terminal
-Password Entropy Calculator
 
-Choose custom password length
-
-Select character types:
-✅ Letters (uppercase & lowercase)
-✅ Numbers
-✅ Symbols
-
-Exclude ambiguous characters (like l, 1, I, O, 0)
-
-Input validation for safer usage
-
-Generate multiple passwords at once
-
-Built-in password strength indicator (Weak ❌, Medium ⚠️, Strong 💪)
-
-Option to save generated passwords to a file
-
-Built using only Python standard libraries
-
-Lightweight and easy to modify or extend
+- Custom password length
+- Include letters (uppercase and lowercase)
+- Include numbers
+- Include symbols
+- Exclude ambiguous characters (l, 1, I, O, 0)
+- Generate multiple passwords
+- No duplicate passwords in batch
+- Guaranteed inclusion of selected character types
+- Cryptographically secure generation (secrets module)
+- Password strength checker (Weak / Medium / Strong)
+- Entropy calculation (bits)
+- Crack time estimation
+- Visual strength bar
+- Regenerate specific password
+- Copy password to clipboard
+- Save passwords to file
 
 🧠 How It Works
 The user enters the desired password length.
