@@ -157,13 +157,20 @@ def main():
     print("\nGenerated Password(s):\n")
 
     generated = []
-    for i in range(quantity):
+    seen = set()
+
+    while len(generated) < quantity:
         password = generate_password(length, characters, include_letters, include_numbers, include_symbols)
+        if password in seen:
+            continue
+        seen.add(password)
+
         strength, score = check_strength(password)
         entropy = calculate_entropy(password, pool_size)
         crack = estimate_crack_time(entropy)
         bar = visualize_strength(score)
-        print(f"{i+1}. {password} → {strength} | {bar} | Entropy: {entropy:.2f} bits | Crack Time: {crack}")
+
+        print(f"{len(generated)+1}. {password} → {strength} | {bar} | Entropy: {entropy:.2f} bits | Crack Time: {crack}")
         generated.append((password, strength, entropy, crack, bar))
 
     if input("\nRegenerate a password? (y/n): ").strip().lower() == "y":
