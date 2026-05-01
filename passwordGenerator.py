@@ -17,6 +17,7 @@ def get_user_input():
     include_numbers = input("Include numbers? (y/n): ").strip().lower() == "y"
     include_symbols = input("Include symbols? (y/n): ").strip().lower() == "y"
     exclude_ambiguous = input("Exclude ambiguous characters (l,1,I,O,0)? (y/n): ").strip().lower() == "y"
+    no_repeat = input("Disallow repeating characters? (y/n): ").strip().lower() == "y"
 
     try:
         quantity = int(input("How many passwords to generate?: "))
@@ -30,7 +31,7 @@ def get_user_input():
         print("Select at least one character type")
         return None
 
-    return length, include_letters, include_numbers, include_symbols, exclude_ambiguous, quantity
+    return length, include_letters, include_numbers, include_symbols, exclude_ambiguous, quantity, no_repeat
 
 def build_character_pool(include_letters, include_numbers, include_symbols, exclude_ambiguous):
     characters = ""
@@ -48,7 +49,7 @@ def build_character_pool(include_letters, include_numbers, include_symbols, excl
 
     return characters
 
-def generate_password(length, characters, include_letters, include_numbers, include_symbols):
+def generate_password(length, characters, include_letters, include_numbers, include_symbols, no_repeat):
     password = []
 
     if include_letters:
@@ -58,8 +59,14 @@ def generate_password(length, characters, include_letters, include_numbers, incl
     if include_symbols:
         password.append(secrets.choice(string.punctuation))
 
+    used = set(password)
+
     while len(password) < length:
-        password.append(secrets.choice(characters))
+        c = secrets.choice(characters)
+        if no_repeat and c in used:
+            continue
+        password.append(c)
+        used.add(c)
 
     random.shuffle(password)
     return ''.join(password)
@@ -124,11 +131,11 @@ def copy_to_clipboard(passwords):
     except:
         print("Invalid input")
 
-def regenerate_one(generated, length, characters, include_letters, include_numbers, include_symbols, pool_size):
+def regenerate_one(generated, length, characters, include_letters, include_numbers, include_symbols, pool_size, no_repeat):
     try:
         choice = int(input("Enter password number to regenerate: "))
         if 1 <= choice <= len(generated):
-            password = generate_password(length, characters, include_letters, include_numbers, include_symbols)
+            password = generate_password(length, characters, include_letters, include_numbers, include_symbols, no_repeat)
             strength, score = check_strength(password)
             entropy = calculate_entropy(password, pool_size)
             crack = estimate_crack_time(entropy)
@@ -149,7 +156,7 @@ def main():
     if not user_input:
         return
 
-    length, include_letters, include_numbers, include_symbols, exclude_ambiguous, quantity = user_input
+    length, include_letters, include_numbers, include_symbols, exclude_ambiguous, quantity, no_repeat = user_input
 
     characters = build_character_pool(include_letters, include_numbers, include_symbols, exclude_ambiguous)
     pool_size = len(characters)
@@ -160,7 +167,7 @@ def main():
     seen = set()
 
     while len(generated) < quantity:
-        password = generate_password(length, characters, include_letters, include_numbers, include_symbols)
+        password = generate_password(length, characters, include_letters, include_numbers, include_symbols, no_repeat)
         if password in seen:
             continue
         seen.add(password)
@@ -174,7 +181,7 @@ def main():
         generated.append((password, strength, entropy, crack, bar))
 
     if input("\nRegenerate a password? (y/n): ").strip().lower() == "y":
-        regenerate_one(generated, length, characters, include_letters, include_numbers, include_symbols, pool_size)
+        regenerate_one(generated, length, characters, include_letters, include_numbers, include_symbols, pool_size, no_repeat)
 
     if input("\nCopy a password? (y/n): ").strip().lower() == "y":
         copy_to_clipboard(generated)
