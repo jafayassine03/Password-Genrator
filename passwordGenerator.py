@@ -3,6 +3,10 @@ import secrets
 import random
 import pyperclip
 import math
+import json
+from datetime import datetime
+
+HISTORY_FILE = "password_history.json"
 
 def get_user_input():
     try:
@@ -63,8 +67,10 @@ def generate_password(length, characters, include_letters, include_numbers, incl
 
     while len(password) < length:
         c = secrets.choice(characters)
+
         if no_repeat and c in used:
             continue
+
         password.append(c)
         used.add(c)
 
@@ -76,10 +82,13 @@ def check_strength(password):
 
     if len(password) >= 12:
         score += 1
+
     if any(c.islower() for c in password) and any(c.isupper() for c in password):
         score += 1
+
     if any(c.isdigit() for c in password):
         score += 1
+
     if any(c in string.punctuation for c in password):
         score += 1
 
@@ -96,6 +105,7 @@ def calculate_entropy(password, pool_size):
 def estimate_crack_time(entropy):
     guesses_per_second = 1e10
     seconds = (2 ** entropy) / guesses_per_second
+
     if seconds < 60:
         return f"{seconds:.2f} seconds"
     elif seconds < 3600:
@@ -113,52 +123,152 @@ def visualize_strength(score):
 def save_passwords(passwords):
     try:
         filename = input("Enter filename: ").strip()
+
         with open(filename, "w") as f:
             for i, (pwd, strength, entropy, crack, bar) in enumerate(passwords, start=1):
-                f.write(f"{i}. {pwd} → {strength} | {bar} | Entropy: {entropy:.2f} bits | Crack Time: {crack}\n")
+                f.write(
+                    f"{i}. {pwd} → {strength} | {bar} | "
+                    f"Entropy: {entropy:.2f} bits | Crack Time: {crack}\n"
+                )
+
         print("Saved successfully")
+
     except:
         print("Error saving file")
 
 def copy_to_clipboard(passwords):
     try:
         choice = int(input("Enter password number to copy: "))
+
         if 1 <= choice <= len(passwords):
             pyperclip.copy(passwords[choice - 1][0])
             print("Copied")
         else:
             print("Invalid choice")
+
     except:
         print("Invalid input")
 
-def regenerate_one(generated, length, characters, include_letters, include_numbers, include_symbols, pool_size, no_repeat):
+def regenerate_one(
+    generated,
+    length,
+    characters,
+    include_letters,
+    include_numbers,
+    include_symbols,
+    pool_size,
+    no_repeat
+):
     try:
         choice = int(input("Enter password number to regenerate: "))
+
         if 1 <= choice <= len(generated):
-            password = generate_password(length, characters, include_letters, include_numbers, include_symbols, no_repeat)
+
+            password = generate_password(
+                length,
+                characters,
+                include_letters,
+                include_numbers,
+                include_symbols,
+                no_repeat
+            )
+
             strength, score = check_strength(password)
             entropy = calculate_entropy(password, pool_size)
             crack = estimate_crack_time(entropy)
             bar = visualize_strength(score)
 
-            generated[choice - 1] = (password, strength, entropy, crack, bar)
+            generated[choice - 1] = (
+                password,
+                strength,
+                entropy,
+                crack,
+                bar
+            )
 
-            print(f"Updated {choice}: {password} → {strength} | {bar} | Entropy: {entropy:.2f} bits | Crack Time: {crack}")
+            print(
+                f"Updated {choice}: {password} → {strength} | "
+                f"{bar} | Entropy: {entropy:.2f} bits | Crack Time: {crack}"
+            )
+
         else:
             print("Invalid choice")
+
     except:
         print("Invalid input")
+
+def save_history(passwords):
+    history = []
+
+    try:
+        with open(HISTORY_FILE, "r") as f:
+            history = json.load(f)
+    except:
+        history = []
+
+    for pwd, strength, entropy, crack, bar in passwords:
+        history.append({
+            "password": pwd,
+            "strength": strength,
+            "entropy": round(entropy, 2),
+            "crack_time": crack,
+            "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+
+    with open(HISTORY_FILE, "w") as f:
+        json.dump(history, f, indent=4)
+
+def view_history():
+    try:
+        with open(HISTORY_FILE, "r") as f:
+            history = json.load(f)
+
+        if not history:
+            print("No history found")
+            return
+
+        print("\nPassword History:\n")
+
+        for i, item in enumerate(history, start=1):
+            print(
+                f"{i}. {item['password']} | "
+                f"{item['strength']} | "
+                f"Entropy: {item['entropy']} bits | "
+                f"Crack Time: {item['crack_time']} | "
+                f"{item['date']}"
+            )
+
+    except:
+        print("No history found")
 
 def main():
     print("=== Advanced Secure Password Generator ===")
 
+    if input("View previous history? (y/n): ").strip().lower() == "y":
+        view_history()
+
     user_input = get_user_input()
+
     if not user_input:
         return
 
-    length, include_letters, include_numbers, include_symbols, exclude_ambiguous, quantity, no_repeat = user_input
+    (
+        length,
+        include_letters,
+        include_numbers,
+        include_symbols,
+        exclude_ambiguous,
+        quantity,
+        no_repeat
+    ) = user_input
 
-    characters = build_character_pool(include_letters, include_numbers, include_symbols, exclude_ambiguous)
+    characters = build_character_pool(
+        include_letters,
+        include_numbers,
+        include_symbols,
+        exclude_ambiguous
+    )
+
     pool_size = len(characters)
 
     print("\nGenerated Password(s):\n")
@@ -167,9 +277,19 @@ def main():
     seen = set()
 
     while len(generated) < quantity:
-        password = generate_password(length, characters, include_letters, include_numbers, include_symbols, no_repeat)
+
+        password = generate_password(
+            length,
+            characters,
+            include_letters,
+            include_numbers,
+            include_symbols,
+            no_repeat
+        )
+
         if password in seen:
             continue
+
         seen.add(password)
 
         strength, score = check_strength(password)
@@ -177,11 +297,32 @@ def main():
         crack = estimate_crack_time(entropy)
         bar = visualize_strength(score)
 
-        print(f"{len(generated)+1}. {password} → {strength} | {bar} | Entropy: {entropy:.2f} bits | Crack Time: {crack}")
-        generated.append((password, strength, entropy, crack, bar))
+        print(
+            f"{len(generated)+1}. {password} → {strength} | "
+            f"{bar} | Entropy: {entropy:.2f} bits | Crack Time: {crack}"
+        )
+
+        generated.append((
+            password,
+            strength,
+            entropy,
+            crack,
+            bar
+        ))
+
+    save_history(generated)
 
     if input("\nRegenerate a password? (y/n): ").strip().lower() == "y":
-        regenerate_one(generated, length, characters, include_letters, include_numbers, include_symbols, pool_size, no_repeat)
+        regenerate_one(
+            generated,
+            length,
+            characters,
+            include_letters,
+            include_numbers,
+            include_symbols,
+            pool_size,
+            no_repeat
+        )
 
     if input("\nCopy a password? (y/n): ").strip().lower() == "y":
         copy_to_clipboard(generated)
